@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XAVIER — COMBAT ANTHEM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Oswald:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --black:#0d0b09;
+    --charcoal:#1c1a15;
+    --stone-dark:#333527;
+    --stone-mid:#6c7160;
+    --stone-light:#cfd3c1;
+    --bone:#a8946d;
+    --ember:#ff6c28;
+    --ember-soft:#c9490f;
+    --ember-deep:#4a1e08;
+    --steel-hi:#c7cabd;
+    --steel-lo:#4a4c40;
+    --line: rgba(207,211,193,0.18);
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+
+  body{
+    margin:0;
+    min-height:100vh;
+    background:var(--black);
+    color:var(--stone-light);
+    font-family:'Oswald', sans-serif;
+    font-weight:300;
+    overflow-x:hidden;
+    position:relative;
+  }
+
+  /* ---------- 배경: 불타는 심층 그라데이션 ---------- */
+  .bg-texture{
+    position:fixed;
+    inset:0;
+    z-index:0;
+    pointer-events:none;
+    background:
+      /* 상단 희미한 연기빛 석영 */
+      radial-gradient(ellipse 80% 30% at 50% 0%, rgba(120,118,100,0.10), transparent 60%),
+      /* 중앙 좌측 잿불 열기 */
+      radial-gradient(ellipse 55% 40% at 18% 55%, rgba(160,50,5,0.18), transparent 65%),
+      /* 중앙 우측 잿불 열기 */
+      radial-gradient(ellipse 55% 40% at 82% 55%, rgba(130,38,4,0.15), transparent 65%),
+      /* 하단 용광로 코어 — 불꽃의 근원 */
+      radial-gradient(ellipse 90% 35% at 50% 100%, rgba(255,80,0,0.55), transparent 55%),
+      /* 하단 양끝 불씨 번짐 */
+      radial-gradient(ellipse 40% 28% at 4% 100%, rgba(200,55,0,0.40), transparent 60%),
+      radial-gradient(ellipse 40% 28% at 96% 100%, rgba(200,55,0,0.35), transparent 60%),
+      /* 기저 레이어: 숯 검정 → 짙은 자주 → 거의 검정 */
+      linear-gradient(180deg,
+        #0a0908 0%,
+        #0e0b09 25%,
+        #160c07 50%,
+        #2a1004 70%,
+        #3d1604 82%,
+        #1a0a02 92%,
+        #0a0503 100%
+      );
+  }
+  .bg-noise{
+    position:fixed;
+    inset:0;
+    z-index:0;
+    pointer-events:none;
+    opacity:0.45;
+    mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 0.8  0 0 0 0 0.8  0 0 0 0 0.75  0 0 0 0.35 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+  .bg-cracks{
+    position:fixed;
+    inset:0;
+    z-index:0;
+    pointer-events:none;
+    opacity:0.35;
+  }
+
+  /* ---------- Canvas 불꽃/불티 레이어 ---------- */
+  #fire-canvas{
+    position:fixed;
+    inset:0;
+    width:100%;
+    height:100%;
+    z-index:1;
+    pointer-events:none;
+  }
+  @media (prefers-reduced-motion: reduce){
+    #fire-canvas{ display:none; }
+    html{scroll-behavior:auto;}
+  }
+
+  .page{position:relative; z-index:2; max-width:1180px; margin:0 auto; padding: 64px 24px 40px;}
+
+  /* ---------- 헤더 ---------- */
+  header{ text-align:center; margin-bottom:56px; }
+  .moth-mark{ width:64px; height:auto; opacity:0.92; margin-bottom:14px; filter:drop-shadow(0 0 10px rgba(255,108,40,0.15)); }
+  .wordmark{
+    font-family:'Cormorant Garamond', serif;
+    font-weight:400;
+    font-size:clamp(36px, 6vw, 58px);
+    letter-spacing:0.42em;
+    text-transform:uppercase;
+    color:var(--steel-hi);
+    margin:0 0 0 0.42em; /* letter-spacing 보정 */
+    text-shadow:0 0 24px rgba(0,0,0,0.6);
+  }
+  .rule{
+    width:120px;
+    height:1px;
+    margin:18px auto 16px;
+    background:linear-gradient(90deg, transparent, var(--stone-mid), transparent);
+  }
+  .subtitle-line{
+    font-family:'Oswald', sans-serif;
+    font-size:12px;
+    letter-spacing:0.5em;
+    text-transform:uppercase;
+    color:var(--bone);
+    margin:0 0 0 0.5em;
+  }
+  .subtitle-line span.dot{ color:var(--ember-soft); margin:0 10px; }
+
+  /* ---------- 섹션 공통 ---------- */
+  .eyebrow{
+    font-family:'Oswald', sans-serif;
+    font-size:11px;
+    font-weight:500;
+    letter-spacing:0.38em;
+    text-transform:uppercase;
+    color:var(--ember);
+    text-align:center;
+    margin: 0 0 6px 0.38em;
+  }
+  .track-caption{ text-align:center; margin-top:16px; }
+  .track-title{
+    font-family:'Cormorant Garamond', serif;
+    font-weight:500;
+    font-style:italic;
+    color:var(--steel-hi);
+    margin:0;
+  }
+  .track-sub{
+    font-family:'Oswald', sans-serif;
+    font-weight:300;
+    letter-spacing:0.08em;
+    color:var(--stone-mid);
+    margin:4px 0 0;
+  }
+
+  /* ---------- 메인 테마 ---------- */
+  .hero{ margin: 0 auto 68px; display:flex; flex-direction:column; align-items:center; }
+  .frame{
+    position:relative;
+    border-radius:2px;
+    background:var(--charcoal);
+    padding:10px;
+    background:
+      linear-gradient(155deg, rgba(207,211,193,0.14), rgba(0,0,0,0.5) 40%, rgba(0,0,0,0.75)),
+      linear-gradient(var(--charcoal), var(--charcoal));
+    box-shadow:
+      0 0 0 1px rgba(0,0,0,0.6),
+      0 18px 50px rgba(0,0,0,0.55),
+      0 0 60px rgba(201,73,15,0.06);
+  }
+  .frame .rivet{
+    position:absolute;
+    width:8px; height:8px;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, var(--steel-hi), var(--steel-lo) 60%, #1a1a15 100%);
+    box-shadow:0 1px 2px rgba(0,0,0,0.8) inset, 0 1px 1px rgba(255,255,255,0.15);
+  }
+  .frame .rivet.tl{ top:6px; left:6px; }
+  .frame .rivet.tr{ top:6px; right:6px; }
+  .frame .rivet.bl{ bottom:6px; left:6px; }
+  .frame .rivet.br{ bottom:6px; right:6px; }
+
+  .media-square{
+    position:relative;
+    width:100%;
+    aspect-ratio:1/1;
+    overflow:hidden;
+    background:#000;
+  }
+  .media-square video, .media-square img.poster{
+    position:absolute; inset:0;
+    width:100%; height:100%;
+    object-fit:cover;
+    display:block;
+  }
+  .media-square video{ background:#000; }
+
+  .play-overlay{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(180deg, rgba(10,9,7,0.15), rgba(10,9,7,0.55) 75%);
+    cursor:pointer;
+    transition:opacity 0.35s ease;
+  }
+  .play-overlay.hidden{ opacity:0; pointer-events:none; }
+
+  .play-btn{
+    width:64px; height:64px;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(circle at 35% 30%, #2c2a22, #100e0b 70%);
+    border:1px solid rgba(207,211,193,0.35);
+    box-shadow:0 0 0 6px rgba(13,11,9,0.4), 0 8px 24px rgba(0,0,0,0.6), 0 0 26px rgba(255,108,40,0.18);
+    transition:transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  }
+  .play-overlay:hover .play-btn{
+    transform:scale(1.08);
+    border-color:var(--ember);
+    box-shadow:0 0 0 6px rgba(13,11,9,0.4), 0 8px 24px rgba(0,0,0,0.6), 0 0 34px rgba(255,108,40,0.4);
+  }
+  .play-btn svg{ width:22px; height:22px; fill:var(--stone-light); margin-left:3px; }
+  .sub .play-btn{ width:44px; height:44px; }
+  .sub .play-btn svg{ width:15px; height:15px; margin-left:2px; }
+
+  .hero .frame{ width:min(560px, 86vw); }
+  .hero-label{ position:absolute; top:14px; left:16px; z-index:3;
+    font-family:'Oswald'; font-size:10px; letter-spacing:0.3em; color:var(--stone-light);
+    background:rgba(10,9,7,0.55); padding:4px 8px; border:1px solid var(--line);
+  }
+  .hero-label .dot{ color:var(--ember); }
+
+  /* ---------- 균열 디바이더 ---------- */
+  .crack-divider{ display:block; width:100%; max-width:640px; height:26px; margin:0 auto 60px; opacity:0.55; }
+
+  /* ---------- 서브 트랙 ---------- */
+  .sub-grid{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:28px;
+    max-width:920px;
+    margin:0 auto;
+  }
+  .sub .frame{ padding:7px; }
+  .sub .rivet{ width:6px; height:6px; }
+  .sub-index{
+    font-family:'Oswald'; font-size:10px; letter-spacing:0.3em; color:var(--ember-soft);
+  }
+  .sub .track-title{ font-size:20px; }
+  .sub .track-sub{ font-size:11px; }
+
+  @media (max-width: 760px){
+    .sub-grid{ grid-template-columns:1fr; max-width:360px; }
+  }
+
+  /* ---------- 푸터 ---------- */
+  footer{
+    margin-top:78px;
+    text-align:center;
+    padding-top:34px;
+    border-top:1px solid var(--line);
+  }
+  .advisory{
+    display:inline-flex;
+    flex-direction:column;
+    border:1px solid var(--stone-light);
+    padding:4px 10px;
+    margin-bottom:22px;
+    text-align:left;
+    background:rgba(0,0,0,0.2);
+  }
+  .advisory .top{ font-family:'Oswald'; font-size:9px; letter-spacing:0.05em; color:var(--stone-light); line-height:1.3; }
+  .advisory .bottom{ font-family:'Oswald'; font-weight:600; font-size:11px; letter-spacing:0.03em; color:var(--stone-light); line-height:1.3; }
+  .credit{
+    font-family:'Oswald'; font-size:11px; letter-spacing:0.28em; text-transform:uppercase;
+    color:var(--stone-mid); margin:0 0 6px;
+  }
+  .credit b{ color:var(--bone); font-weight:400; }
+  .fine{ font-family:'Oswald'; font-size:10px; color:#4a4c40; letter-spacing:0.05em; }
+
+  /* focus 접근성 */
+  .play-overlay:focus-visible{ outline:2px solid var(--ember); outline-offset:-2px; }
+  video:focus-visible{ outline:2px solid var(--ember); }
+</style>
+</head>
+<body>
+
+<div class="bg-texture"></div>
+<div class="bg-noise"></div>
+<svg class="bg-cracks" viewBox="0 0 1200 1400" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+  <g stroke="rgba(207,211,193,0.5)" stroke-width="1" fill="none">
+    <path d="M980 0 L940 120 L1010 220 L960 340 L1040 460 L1000 620"/>
+    <path d="M1040 460 L1120 500 L1150 600"/>
+    <path d="M960 340 L900 380 L880 470"/>
+    <path d="M120 1400 L180 1260 L120 1140 L200 1020 L150 900"/>
+    <path d="M180 1260 L260 1230 L300 1150"/>
+  </g>
+</svg>
+
+<canvas id="fire-canvas" aria-hidden="true"></canvas>
+
+<div class="page">
+
+  <header>
+    <svg class="moth-mark" viewBox="0 0 200 110" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <g fill="none" stroke="var(--stone-light)" stroke-width="1.6" opacity="0.9">
+        <path d="M100 34 C 78 6, 30 4, 8 26 C 2 44, 10 66, 34 70 C 54 73, 78 60, 92 46" />
+        <path d="M100 34 C 122 6, 170 4, 192 26 C 198 44, 190 66, 166 70 C 146 73, 122 60, 108 46" />
+        <path d="M100 34 C 84 20, 46 22, 30 40 C 26 52, 32 62, 48 62" />
+        <path d="M100 34 C 116 20, 154 22, 170 40 C 174 52, 168 62, 152 62" />
+        <line x1="100" y1="24" x2="90" y2="4" />
+        <line x1="100" y1="24" x2="110" y2="4" />
+      </g>
+      <ellipse cx="100" cy="46" rx="7" ry="24" fill="var(--stone-light)" opacity="0.85"/>
+      <circle cx="100" cy="30" r="4" fill="var(--ember)" opacity="0.7"/>
+    </svg>
+    <h1 class="wordmark">Xavier</h1>
+    <div class="rule"></div>
+    <p class="subtitle-line"><span class="dot">·</span>COMBAT ANTHEM<span class="dot">·</span></p>
+  </header>
+
+  <!-- 메인 테마곡 -->
+  <section class="hero">
+    <p class="eyebrow">Main Theme</p>
+    <div class="frame">
+      <span class="rivet tl"></span><span class="rivet tr"></span>
+      <span class="rivet bl"></span><span class="rivet br"></span>
+      <div class="media-square" data-player>
+        <span class="hero-label"><span class="dot">●</span> LYRIC VIDEO</span>
+        <video preload="metadata" poster="media/poster_main.jpg" playsinline>
+          <source src="media/main.mp4" type="video/mp4">
+        </video>
+        <div class="play-overlay" role="button" tabindex="0" aria-label="Polilla de ascuas 재생">
+          <span class="play-btn">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="track-caption">
+      <p class="track-title">Polilla de ascuas</p>
+      <p class="track-sub">메인 전투 테마</p>
+    </div>
+  </section>
+
+  <svg class="crack-divider" viewBox="0 0 640 26" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M0 13 L120 13 L145 4 L165 20 L190 8 L215 13 L500 13 L525 22 L545 6 L565 13 L640 13"
+      stroke="var(--ember-soft)" stroke-width="1" fill="none" opacity="0.8"/>
+  </svg>
+
+  <!-- 서브 트랙 -->
+  <section>
+    <p class="eyebrow">Sub Tracks</p>
+    <div class="sub-grid">
+
+      <div class="sub">
+        <div class="frame">
+          <span class="rivet tl"></span><span class="rivet tr"></span>
+          <span class="rivet bl"></span><span class="rivet br"></span>
+          <div class="media-square" data-player>
+            <video preload="metadata" poster="media/poster_1.jpg" playsinline>
+              <source src="media/track1.mp4" type="video/mp4">
+            </video>
+            <div class="play-overlay" role="button" tabindex="0" aria-label="Track ver.1 재생">
+              <span class="play-btn">
+                <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="track-caption">
+          <p class="sub-index">TRACK 01</p>
+          <p class="track-title">Track ver.1</p>
+        </div>
+      </div>
+
+      <div class="sub">
+        <div class="frame">
+          <span class="rivet tl"></span><span class="rivet tr"></span>
+          <span class="rivet bl"></span><span class="rivet br"></span>
+          <div class="media-square" data-player>
+            <video preload="metadata" poster="media/poster_2.jpg" playsinline>
+              <source src="media/track2.mp4" type="video/mp4">
+            </video>
+            <div class="play-overlay" role="button" tabindex="0" aria-label="Track ver.2 재생">
+              <span class="play-btn">
+                <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="track-caption">
+          <p class="sub-index">TRACK 02</p>
+          <p class="track-title">Track ver.2</p>
+        </div>
+      </div>
+
+      <div class="sub">
+        <div class="frame">
+          <span class="rivet tl"></span><span class="rivet tr"></span>
+          <span class="rivet bl"></span><span class="rivet br"></span>
+          <div class="media-square" data-player>
+            <video preload="metadata" poster="media/poster_3.jpg" playsinline>
+              <source src="media/track3.mp4" type="video/mp4">
+            </video>
+            <div class="play-overlay" role="button" tabindex="0" aria-label="Track ver.3 재생">
+              <span class="play-btn">
+                <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="track-caption">
+          <p class="sub-index">TRACK 03</p>
+          <p class="track-title">Track ver.3</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <footer>
+    <div class="advisory">
+      <span class="top">PARENTAL</span>
+      <span class="bottom">ADVISORY</span>
+      <span class="top">EXPLICIT CONTENT</span>
+    </div>
+    <p class="credit"><b>Xavier</b> — Combat Anthem OST</p>
+    <p class="fine">Character Original Soundtrack · Lyric Video Collection</p>
+  </footer>
+
+</div>
+
+<script>
+  // =====================================================
+  //  FIRE CANVAS — 불꽃 + 불티(ember) + 연기 파티클 시스템
+  // =====================================================
+  (function(){
+    var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(reduced) return;
+
+    var canvas = document.getElementById('fire-canvas');
+    var ctx = canvas.getContext('2d');
+    var W, H;
+
+    function resize(){
+      W = canvas.width = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    var rand = function(a,b){ return a + Math.random()*(b-a); };
+
+    // ── 파티클 공통 풀 ──────────────────────────────────
+    var particles = [];
+
+    // ── 1. 불꽃 파티클 (Flame) ───────────────────────────
+    //    하단 3개 발생원(좌/중/우)에서 위로 올라가며
+    //    주황→황→투명, 길쭉한 타원형, 흔들림
+    function Flame(srcX){
+      this.reset(srcX);
+    }
+    Flame.prototype.reset = function(srcX){
+      this.type  = 'flame';
+      this.srcX  = srcX !== undefined ? srcX : rand(W*0.1, W*0.9);
+      this.x     = this.srcX + rand(-40, 40);
+      this.y     = H + rand(0, 30);
+      this.vx    = rand(-0.6, 0.6);
+      this.vy    = rand(-3.5, -1.8);
+      this.life  = 1.0;
+      this.decay = rand(0.008, 0.018);
+      this.r     = rand(18, 52);       // 반지름
+      this.scaleY= rand(1.6, 2.8);     // 위로 늘린 비율
+      this.wobble= rand(0, Math.PI*2); // 흔들림 위상
+      this.wobbleSpeed = rand(0.04, 0.10);
+    };
+    Flame.prototype.update = function(){
+      this.wobble += this.wobbleSpeed;
+      this.x  += this.vx + Math.sin(this.wobble) * 0.7;
+      this.y  += this.vy;
+      this.vy *= 0.995;                // 위로 갈수록 느려짐
+      this.r  *= 0.997;               // 크기 서서히 줄어듦
+      this.life -= this.decay;
+    };
+    Flame.prototype.draw = function(){
+      if(this.life <= 0) return;
+      ctx.save();
+      ctx.translate(this.x, this.y);
+      ctx.scale(1, this.scaleY);
+      var g = ctx.createRadialGradient(0,0, 0, 0,0, this.r);
+      // 코어: 밝은 황백
+      g.addColorStop(0,   'rgba(255,230,140,'+(this.life*0.85)+')');
+      // 중간: 주황
+      g.addColorStop(0.35,'rgba(255,120,20,'+  (this.life*0.70)+')');
+      // 외곽: 심홍
+      g.addColorStop(0.7, 'rgba(200,40,0,'+    (this.life*0.45)+')');
+      // 끝: 투명
+      g.addColorStop(1,   'rgba(80,10,0,0)');
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(0,0, this.r, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    };
+
+    // ── 2. 불티 파티클 (Ember / Spark) ──────────────────
+    //    작고 밝은 점, 포물선 궤적으로 튀어오름
+    function Ember(){
+      this.reset();
+    }
+    Ember.prototype.reset = function(){
+      this.type  = 'ember';
+      this.x     = rand(W*0.05, W*0.95);
+      this.y     = H + rand(0, 60);
+      this.vx    = rand(-2.2, 2.2);
+      this.vy    = rand(-7, -2.5);
+      this.gravity = rand(0.04, 0.09);
+      this.life  = 1.0;
+      this.decay = rand(0.006, 0.016);
+      this.r     = rand(1.2, 3.2);
+      this.trail = [];
+    };
+    Ember.prototype.update = function(){
+      // 잔상 기록
+      this.trail.push({x: this.x, y: this.y});
+      if(this.trail.length > 6) this.trail.shift();
+
+      this.x  += this.vx;
+      this.y  += this.vy;
+      this.vy += this.gravity; // 중력
+      this.vx *= 0.99;
+      this.life -= this.decay;
+    };
+    Ember.prototype.draw = function(){
+      if(this.life <= 0) return;
+      // 잔상(꼬리)
+      for(var i=0;i<this.trail.length;i++){
+        var t = i/this.trail.length;
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.beginPath();
+        ctx.arc(this.trail[i].x, this.trail[i].y, this.r*t*0.7, 0, Math.PI*2);
+        ctx.fillStyle = 'rgba(255,160,30,'+(this.life*t*0.4)+')';
+        ctx.fill();
+        ctx.restore();
+      }
+      // 본체
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      var g = ctx.createRadialGradient(this.x,this.y,0, this.x,this.y, this.r*2.5);
+      g.addColorStop(0,   'rgba(255,255,200,'+(this.life)+')');
+      g.addColorStop(0.4, 'rgba(255,140,20,'+(this.life*0.8)+')');
+      g.addColorStop(1,   'rgba(255,60,0,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.r*2.5, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    };
+
+    // ── 3. 연기 파티클 (Smoke) ───────────────────────────
+    //    불꽃 위쪽에서 생성, 느리고 크게 퍼짐, 어둡고 투명
+    function Smoke(){
+      this.reset();
+    }
+    Smoke.prototype.reset = function(){
+      this.type  = 'smoke';
+      this.x     = rand(W*0.15, W*0.85);
+      this.y     = rand(H*0.55, H*0.75);  // 중하단에서 생성
+      this.vx    = rand(-0.3, 0.3);
+      this.vy    = rand(-0.6, -0.2);
+      this.life  = rand(0.15, 0.35);
+      this.decay = rand(0.0015, 0.004);
+      this.r     = rand(30, 80);
+      this.grow  = rand(0.3, 0.8);
+    };
+    Smoke.prototype.update = function(){
+      this.x  += this.vx;
+      this.y  += this.vy;
+      this.r  += this.grow;
+      this.vx += rand(-0.02, 0.02);
+      this.life -= this.decay;
+    };
+    Smoke.prototype.draw = function(){
+      if(this.life <= 0) return;
+      ctx.save();
+      var g = ctx.createRadialGradient(this.x,this.y,0, this.x,this.y,this.r);
+      g.addColorStop(0,   'rgba(60,50,40,'+(this.life*0.5)+')');
+      g.addColorStop(0.5, 'rgba(40,32,26,'+(this.life*0.3)+')');
+      g.addColorStop(1,   'rgba(20,15,10,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.r, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    };
+
+    // ── 발생원 정의 (하단 3곳 + 무작위) ────────────────
+    var flameSources = [
+      W * 0.20,
+      W * 0.50,
+      W * 0.80,
+    ];
+
+    // 초기 풀 채우기
+    for(var i=0;i<60;i++){
+      var f = new Flame(flameSources[i%3]);
+      f.life = rand(0, 1);            // stagger
+      particles.push(f);
+    }
+    for(var i=0;i<80;i++){
+      var e = new Ember();
+      e.life = rand(0, 1);
+      particles.push(e);
+    }
+    for(var i=0;i<35;i++){
+      var s = new Smoke();
+      s.life = rand(0, s.life);
+      particles.push(s);
+    }
+
+    // 발생원 X는 viewport resize에 따라 갱신
+    function updateSources(){
+      flameSources[0] = W * 0.20;
+      flameSources[1] = W * 0.50;
+      flameSources[2] = W * 0.80;
+    }
+    window.addEventListener('resize', updateSources);
+
+    // ── 메인 루프 ───────────────────────────────────────
+    function tick(){
+      ctx.clearRect(0, 0, W, H);
+
+      for(var i=0;i<particles.length;i++){
+        var p = particles[i];
+        p.update();
+        p.draw();
+
+        if(p.life <= 0){
+          // 재활용
+          if(p.type === 'flame'){
+            var src = flameSources[Math.floor(rand(0,3))];
+            p.reset(src);
+          } else {
+            p.reset();
+          }
+        }
+      }
+
+      requestAnimationFrame(tick);
+    }
+    tick();
+  })();
+
+  // 유튜브 방식 재생: 클릭 시 재생, 동시에 하나만
+  (function(){
+    var players = document.querySelectorAll('[data-player]');
+    var allVideos = [];
+
+    players.forEach(function(p){
+      var video = p.querySelector('video');
+      var overlay = p.querySelector('.play-overlay');
+      allVideos.push(video);
+
+      function start(){
+        allVideos.forEach(function(v){
+          if(v !== video){ v.pause(); }
+        });
+        document.querySelectorAll('.play-overlay').forEach(function(o){
+          if(o !== overlay){ o.classList.remove('hidden'); }
+        });
+        video.controls = true;
+        overlay.classList.add('hidden');
+        video.play();
+      }
+
+      overlay.addEventListener('click', start);
+      overlay.addEventListener('keydown', function(e){
+        if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); start(); }
+      });
+
+      video.addEventListener('pause', function(){
+        if(video.currentTime === 0 || video.ended){
+          overlay.classList.remove('hidden');
+          video.controls = false;
+        }
+      });
+      video.addEventListener('ended', function(){
+        overlay.classList.remove('hidden');
+        video.controls = false;
+      });
+    });
+  })();
+</script>
+
+</body>
+</html>
